@@ -22,13 +22,16 @@ const AuthForm = () => {
 
     setIsLoading(true);
     //  He decided to skip validation to focus on authentication (only letting ppl login if logged out.)
+    let url;
 
     if (isLogin) {
-
+      url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAp21dduQeahByw_nPuMiRzzhYtwcWxNBc';
     } else {
-      //fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=[API_KEY]');
+      url = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAp21dduQeahByw_nPuMiRzzhYtwcWxNBc';
       //  Replace the default api key w yours:
-      fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAp21dduQeahByw_nPuMiRzzhYtwcWxNBc',
+      //fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=[API_KEY]');
+    }
+      fetch(url,
       {
           method: 'POST',
           body: JSON.stringify({
@@ -43,7 +46,7 @@ const AuthForm = () => {
       ).then((res) => {
         setIsLoading(false);
           if (res.ok) {
-            //...
+            return res.json();
           } else {
             //  This gets the error message somehow... really don't know what's going on....
             //  Async/await would also work here.
@@ -56,13 +59,17 @@ const AuthForm = () => {
                 //  just needed to log the error object and see what it was.
                 errorMessage = data.error.message;
               }
-              alert(errorMessage);
+              throw new Error(errorMessage);
             });
           }
-        }
-      );
-    }
-
+        })
+        //  What's going on... :(
+        .then(data => {
+          console.log(data);
+        })
+        .catch(err => {
+        alert(err.message);
+      });
   };
 
   return (
