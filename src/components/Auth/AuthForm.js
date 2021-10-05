@@ -70,7 +70,12 @@ const AuthForm = () => {
         })
         //  What's going on... :(
         .then(data => {
-          authCtx.login(data.idToken);
+          //  Firebase has an amount of seconds in string form, converting to date here:
+          //  The '+' converts data.expiresIn to a number.
+          //  * 1000 converts from seconds to milliseconds.
+          const expirationTime = new Date(new Date().getTime() + (+data.expiresIn * 1000));
+          //  It needs to be a string bec converting to date in auth-context.
+          authCtx.login(data.idToken, expirationTime.toISOString());
           //  Unlike history.push(), this won't let u go back to prev page. Great for login/out!
           history.replace('/');
         })
