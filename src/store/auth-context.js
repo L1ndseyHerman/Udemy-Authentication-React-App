@@ -1,4 +1,6 @@
-import React, {useState} from "react";
+import React, {useState, useEffect, useCallback} from "react";
+
+let logoutTimer;
 
 const AuthContext = React.createContext({
     token: '',
@@ -18,9 +20,32 @@ const calculateRemainingTime = (expirationTime) => {
     return remainingDuration;
 };
 
+const retrieveStoredToken = () => {
+    const storedToken = localStorage.getItem('token');
+    const storedExpirationDate = localStorage.getItem('expirationTime');
+
+    const remainingTime = calculateRemainingTime(storedExpirationDate);
+
+    if (remainingTime <= 60000) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('expirationTime');
+        return null;
+    }
+
+    return {
+        token: storedToken,
+        duration: remainingTime
+    };
+};
+
 export const AuthContextProvider = (props) => {
 
-    const initialToken = localStorage.getItem('token');
+    const tokenData = retrieveStoredToken();
+    let initialToken;
+
+    if (tokenData) {
+        initialToken = tokenData.token;
+    }
     //  Could be undefined or a string:
     //  Is synchronous, so don't need a useEffect() for this.
     const [token, setToken] = useState(initialToken);
@@ -28,23 +53,36 @@ export const AuthContextProvider = (props) => {
     //  This somehow changes the type of the token to a boolean, false if empty string, true if smtng.
     const userIsLoggedIn = !!token;
 
-    const logoutHandler = () => {
+    const logoutHandler = useCallback(() => {
         setToken(null);
         localStorage.removeItem('token');
-    };
+        localStorage.removeItem('expirationTime');
+
+        if (logoutTimer) {
+            clearTimeout(logoutTimer);
+        }
+    }, []);
 
     const loginHandler = (token, expirationTime) => {
         setToken(token);
         //  local storage can only store primative data (no objects).
         localStorage.setItem('token', token);
+        localStorage.setItem('expirationTime', expirationTime);
 
         const remainingTime = calculateRemainingTime(expirationTime);
 
         //  A timer that will log the user out when it's done.
-        setTimeout(logoutHandler, remainingTime);
+        logoutTimer = setTimeout(logoutHandler, remainingTime);
         //  For testing: 3 seconds:
         //setTimeout(logoutHandler, 3000);
     };
+
+    useEffect(() => {
+        if (tokenData) {
+            console.log(tokenData.duration);
+            logoutTimer = setTimeout(logoutHandler, tokenData.duration);
+        }
+    }, [tokenData, logoutHandler]);
 
     const contextValue = {
         token: token,
