@@ -8,6 +8,7 @@ const AuthForm = () => {
   const passwordInputRef = useRef();
 
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const switchAuthModeHandler = () => {
     setIsLogin((prevState) => !prevState);
@@ -19,6 +20,7 @@ const AuthForm = () => {
     const enteredEmail = emailInputRef.current.value;
     const enteredPassword = passwordInputRef.current.value;
 
+    setIsLoading(true);
     //  He decided to skip validation to focus on authentication (only letting ppl login if logged out.)
 
     if (isLogin) {
@@ -39,14 +41,22 @@ const AuthForm = () => {
           }
       }
       ).then((res) => {
+        setIsLoading(false);
           if (res.ok) {
             //...
           } else {
             //  This gets the error message somehow... really don't know what's going on....
             //  Async/await would also work here.
             return res.json().then(data => {
-              //  Show an error modal.
-              console.log(data);
+              let errorMessage = 'Authentication failed!';
+              //  Makes sure the data object exists and these properties exist:
+              if (data && data.error && data.error.message) {
+                //  THIS is what my programming knowledge test needed! Darn.
+                //  This is Firebase specific, but their API sent something similar,
+                //  just needed to log the error object and see what it was.
+                errorMessage = data.error.message;
+              }
+              alert(errorMessage);
             });
           }
         }
@@ -68,7 +78,8 @@ const AuthForm = () => {
           <input type='password' id='password' required ref={passwordInputRef} />
         </div>
         <div className={classes.actions}>
-          <button>{isLogin ? 'Login' : 'Create Account'}</button>
+          {!isLoading && <button>{isLogin ? 'Login' : 'Create Account'}</button>}
+          {isLoading && <p>Sending request...</p>}
           <button
             type='button'
             className={classes.toggle}
